@@ -1,45 +1,36 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
+ * KilitReactNative - Ebeveyn Kontrol Uygulaması
+ * Flutter'dan React Native'e taşındı
  */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import React from 'react';
+import {StatusBar, useColorScheme, Platform, View} from 'react-native';
+import AppNavigator from './src/navigation/AppNavigator';
 
-function App() {
+function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
 
+  if (Platform.OS === 'web') {
+    return (
+      <View style={{flex: 1}}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <AppNavigator />
+      </View>
+    );
+  }
+
+  // Native platforms
+  const {SafeAreaProvider} = require('react-native-safe-area-context');
+  const {GestureHandlerRootView} = require('react-native-gesture-handler');
+
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{flex: 1}}>
+      <SafeAreaProvider>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <AppNavigator />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;
