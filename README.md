@@ -1,5 +1,7 @@
-LockApp, ebeveynlerin çocuklarının dijital alışkanlıklarını yönetmelerine, uygulama kullanım sürelerini takip etmelerine  olanak tanıyan, modern teknolojilerle geliştirilmiş kapsamlı bir ebeveyn denetim sistemidir.
+LockApp, ebeveynlerin çocuklarının dijital alışkanlıklarını yönetmelerine, uygulama kullanım sürelerini takip etmelerine  olanak tanıyan,
+modern teknolojilerle geliştirilmiş kapsamlı bir ebeveyn denetim sistemidir.
 Proje Videosu: https://drive.google.com/drive/folders/1GXyRsrjSXPJRjFvbG3gP9ahd_66KlML9?usp=drive_link
+
 🚀 Proje Özellikleri
 Bu proje Ebeveyn (Yönetici) ve Çocuk (Denetlenen) olmak üzere iki farklı rolü tek bir uygulamada barındırır.
 
