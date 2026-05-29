@@ -57,10 +57,17 @@ module.exports = {
     static: {
       directory: path.resolve(appDirectory, 'public'),
     },
-    port: 3000,
+    port: 8080,
     hot: true,
     historyApiFallback: true,
     open: true,
+    proxy: [
+      {
+        context: ['/api'],
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    ],
   },
   mode: 'development',
   devtool: 'source-map',

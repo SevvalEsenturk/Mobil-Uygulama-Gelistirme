@@ -11,6 +11,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   role: 'Parent' | 'Child';
+  name?: string;
   deviceId?: string;
 }
 
@@ -46,7 +47,12 @@ class AuthService {
 
   async register(request: RegisterRequest): Promise<void> {
     try {
-      await apiClient.post(API.AUTH.REGISTER, request);
+      // Backend expects lowercase role: 'parent' | 'child'
+      const payload = {
+        ...request,
+        role: request.role.toLowerCase(),
+      };
+      await apiClient.post(API.AUTH.REGISTER, payload);
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || 'Kayıt başarısız',

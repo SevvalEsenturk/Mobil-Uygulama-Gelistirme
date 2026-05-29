@@ -32,6 +32,7 @@ import SettingsScreen from '../screens/common/SettingsScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
 import PermissionScreen from '../screens/common/PermissionScreen';
 import ErrorScreen from '../screens/common/ErrorScreen';
+import ProfileScreen from '../screens/common/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -153,6 +154,11 @@ const AppNavigator: React.FC = () => {
           name="Settings"
           component={SettingsScreen}
           options={{title: 'Ayarlar'}}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{title: 'Profilim'}}
         />
         <Stack.Screen
           name="Notifications"

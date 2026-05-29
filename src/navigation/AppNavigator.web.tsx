@@ -31,6 +31,7 @@ import SettingsScreen from '../screens/common/SettingsScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
 import PermissionScreen from '../screens/common/PermissionScreen';
 import ErrorScreen from '../screens/common/ErrorScreen';
+import ProfileScreen from '../screens/common/ProfileScreen';
 
 const screens: Record<string, React.FC<any>> = {
   Splash: SplashScreen,
@@ -53,6 +54,7 @@ const screens: Record<string, React.FC<any>> = {
   Notifications: NotificationsScreen,
   Permissions: PermissionScreen,
   Error: ErrorScreen,
+  Profile: ProfileScreen,
 };
 
 const screenTitles: Record<string, string> = {
@@ -76,6 +78,7 @@ const screenTitles: Record<string, string> = {
   Notifications: 'Bildirimler',
   Permissions: 'İzinler',
   Error: 'Hata',
+  Profile: 'Profilim',
 };
 
 const noHeaderScreens = ['Splash', 'Onboarding', 'Login'];

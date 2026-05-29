@@ -23,7 +23,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({navigation}) => {
   };
 
   const settings = [
-    {emoji: '👤', title: 'Profil', subtitle: 'Hesap bilgilerinizi düzenleyin'},
+    {emoji: '👤', title: 'Profil', subtitle: 'Hesap bilgilerinizi düzenleyin', onPress: () => navigation.navigate('Profile')},
     {emoji: '🔔', title: 'Bildirimler', subtitle: 'Bildirim tercihlerinizi yönetin', onPress: () => navigation.navigate('Notifications')},
     {emoji: '🔒', title: 'Gizlilik', subtitle: 'Gizlilik ayarlarınızı yönetin'},
     {emoji: '🌐', title: 'Dil', subtitle: 'Uygulama dilini değiştirin'},

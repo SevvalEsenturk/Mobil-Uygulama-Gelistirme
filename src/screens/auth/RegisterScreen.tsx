@@ -51,6 +51,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
         email: email.trim(),
         password,
         role: selectedRole,
+        name: name.trim(),
       });
       Alert.alert('Başarılı', 'Kayıt başarılı! Giriş yapabilirsiniz.', [
         {text: 'Tamam', onPress: () => navigation.navigate('Login')},

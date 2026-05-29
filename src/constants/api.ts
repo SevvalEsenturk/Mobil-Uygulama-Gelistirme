@@ -1,5 +1,6 @@
 export const API = {
-  BASE_URL: 'http://localhost:5000/api',
+  // Webpack proxy forwards /api requests to localhost:5000
+  BASE_URL: '/api',
 
   // Auth endpoints
   AUTH: {

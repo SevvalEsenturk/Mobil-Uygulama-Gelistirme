@@ -51,7 +51,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
         password,
       });
 
-      if (result.user.role === 'Parent') {
+      if (result.user.role.toLowerCase() === 'parent') {
         navigation.replace('ParentDashboard');
       } else {
         navigation.replace('ChildDashboard');
