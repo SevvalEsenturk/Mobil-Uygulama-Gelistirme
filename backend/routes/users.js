@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const { getProfile, getChildren, updateProfile, updatePassword } = require('../controllers/userController');
+const { getProfile, getChildren, updateProfile, updatePassword, deleteProfile, deleteChild } = require('../controllers/userController');
 
 /**
  * @swagger
@@ -128,5 +128,11 @@ router.get('/:parentId/children', auth, getChildren);
  *         description: Eski şifre hatalı
  */
 router.put('/profile/password', auth, updatePassword);
+
+// Hesap silme
+router.delete('/profile', auth, deleteProfile);
+
+// Çocuk silme
+router.delete('/children/:childId', auth, deleteChild);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 /**
  * KilitReactNative - Ebeveyn Kontrol Uygulaması
- * Flutter'dan React Native'e taşındı
+
  */
 
 import React from 'react';

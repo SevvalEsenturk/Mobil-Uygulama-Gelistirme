@@ -22,7 +22,9 @@ app.use(express.json());
 // Request logger
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.url}`);
+  res.on('finish', () => {
+    console.log(`[${timestamp}] ${req.method} ${req.url} - Status: ${res.statusCode}`);
+  });
   next();
 });
 

@@ -53,9 +53,14 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({navigation}) => {
         role: selectedRole,
         name: name.trim(),
       });
-      Alert.alert('Başarılı', 'Kayıt başarılı! Giriş yapabilirsiniz.', [
-        {text: 'Tamam', onPress: () => navigation.navigate('Login')},
-      ]);
+      if (Platform.OS === 'web') {
+        alert('Başarılı\n\nKayıt başarılı! Giriş yapabilirsiniz.');
+        navigation.navigate('Login');
+      } else {
+        Alert.alert('Başarılı', 'Kayıt başarılı! Giriş yapabilirsiniz.', [
+          {text: 'Tamam', onPress: () => navigation.navigate('Login')},
+        ]);
+      }
     } catch (e: any) {
       Alert.alert('Kayıt Başarısız', e.message || 'Bir hata oluştu');
     } finally {

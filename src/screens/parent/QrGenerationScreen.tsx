@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, Image} from 'react-native';
 import {Colors, Typography, Spacing} from '../../theme';
 import apiClient from '../../api/apiClient';
 
@@ -58,13 +58,15 @@ const QrGenerationScreen: React.FC = () => {
               <View style={styles.qrCornerBottomLeft} />
               <View style={styles.qrCornerBottomRight} />
               
-              <Text style={styles.qrEmoji}>📱</Text>
-              <Text style={styles.qrText}>
-                {code.length === 8 
-                  ? `${code.slice(0, 4)} ${code.slice(4)}` 
-                  : `${code.slice(0, 3)} ${code.slice(3)}`}
-              </Text>
-              <Text style={styles.qrSubText}>KİLİT UYGULAMASI</Text>
+              {code ? (
+                <Image
+                  source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${code}` }}
+                  style={styles.qrImage}
+                  resizeMode="contain"
+                />
+              ) : (
+                <ActivityIndicator size="large" color={Colors.primary} />
+              )}
             </View>
           </View>
 
@@ -127,6 +129,12 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.08,
     shadowRadius: 6,
+  },
+  qrImage: {
+    width: 170,
+    height: 170,
+    backgroundColor: Colors.white,
+    borderRadius: 8,
   },
   qrEmoji: {fontSize: 36, marginBottom: Spacing.xs},
   qrText: {

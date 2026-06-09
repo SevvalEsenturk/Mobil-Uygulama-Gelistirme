@@ -119,4 +119,33 @@ const updatePassword = (req, res) => {
   }
 };
 
-module.exports = { getProfile, getChildren, updateProfile, updatePassword };
+const deleteProfile = (req, res) => {
+  try {
+    db.prepare('DELETE FROM users WHERE id = ?').run(req.user.id);
+    res.json({ message: 'Hesap başarıyla silindi.' });
+  } catch (error) {
+    console.error('deleteProfile hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
+  }
+};
+
+const deleteChild = (req, res) => {
+  try {
+    const { childId } = req.params;
+
+    // Yetki kontrolü: çocuk bu ebeveyne mi ait?
+    const child = db.prepare('SELECT id FROM children WHERE id = ? AND parent_id = ?').get(childId, req.user.id);
+    if (!child) {
+      return res.status(404).json({ message: 'Çocuk bulunamadı veya bu işlem için yetkiniz yok.' });
+    }
+
+    db.prepare('DELETE FROM children WHERE id = ?').run(childId);
+    res.json({ message: 'Çocuk bağlantısı başarıyla silindi.' });
+  } catch (error) {
+    console.error('deleteChild hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
+  }
+};
+
+module.exports = { getProfile, getChildren, updateProfile, updatePassword, deleteProfile, deleteChild };
+

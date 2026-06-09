@@ -49,16 +49,21 @@ const PairingInputScreen: React.FC<PairingInputScreenProps> = ({navigation}) => 
       });
 
       if (res.status === 201) {
-        Alert.alert(
-          'Başarılı 🎉',
-          'Cihaz eşleştirmesi başarıyla tamamlandı! Güvenli mod etkinleştirildi.',
-          [
-            {
-              text: 'Tamam',
-              onPress: () => navigation.replace('ChildDashboard'),
-            },
-          ]
-        );
+        if (Platform.OS === 'web') {
+          alert('Başarılı 🎉\n\nCihaz eşleştirmesi başarıyla tamamlandı! Güvenli mod etkinleştirildi.');
+          navigation.replace('ChildDashboard');
+        } else {
+          Alert.alert(
+            'Başarılı 🎉',
+            'Cihaz eşleştirmesi başarıyla tamamlandı! Güvenli mod etkinleştirildi.',
+            [
+              {
+                text: 'Tamam',
+                onPress: () => navigation.replace('ChildDashboard'),
+              },
+            ]
+          );
+        }
       }
     } catch (error: any) {
       console.error('Eşleştirme hatası:', error);

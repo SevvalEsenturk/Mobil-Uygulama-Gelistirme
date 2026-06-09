@@ -14,6 +14,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Colors, Typography, Spacing} from '../../theme';
 import apiClient from '../../api/apiClient';
+import {authService} from '../../services/authService';
 
 interface ProfileScreenProps {
   navigation: any;
@@ -26,6 +27,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
   const [email, setEmail] = useState<string>('');
   const [role, setRole] = useState<string>('');
   const [createdAt, setCreatedAt] = useState<string>('');
+  const [children, setChildren] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
     fetchProfileData();
@@ -37,6 +40,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
       const res = await apiClient.get('/users/profile');
       if (res.data && res.data.user) {
         const u = res.data.user;
+        setUserId(u.id);
         setName(u.name || '');
         setEmail(u.email || '');
         setRole(u.role === 'parent' ? 'Ebeveyn 👨‍💼' : 'Çocuk 👧');
@@ -51,6 +55,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
               year: 'numeric',
             })
           );
+        }
+
+        // Fetch children if parent
+        if (u.role === 'parent') {
+          const childrenRes = await apiClient.get(`/users/${u.id}/children`);
+          if (childrenRes.data && childrenRes.data.children) {
+            setChildren(childrenRes.data.children);
+          }
         }
       }
     } catch (error) {
@@ -91,6 +103,92 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleDeleteChild = (childId: string, childName: string) => {
+    Alert.alert(
+      'Çocuğu Sil 📱',
+      `"${childName}" isimli çocuğun cihaz bağlantısını kesmek ve bu cihaza ait tüm istatistik/kuralları kalıcı olarak silmek istediğinize emin misiniz?\n\nBu işlem kesinlikle geri alınamaz!`,
+      [
+        {text: 'İptal', style: 'cancel'},
+        {
+          text: 'Eşleştirmeyi Sil',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setUpdating(true);
+              await apiClient.delete(`/users/children/${childId}`);
+              Alert.alert('Başarılı 🎉', 'Çocuk bağlantısı ve verileri başarıyla silindi.');
+              fetchProfileData(); // Refresh list
+            } catch (error: any) {
+              console.error('Çocuk silme hatası:', error);
+              Alert.alert(
+                'Hata',
+                error.response?.data?.message || 'Çocuk silinirken bir hata oluştu.'
+              );
+            } finally {
+              setUpdating(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Hesabı Kalıcı Olarak Sil ⚠️',
+      'Hesabınızı silmek istediğinize emin misiniz? Bu işlem sonucunda hesabınız ve varsa bağlı tüm çocuk cihazlarının kuralları/verileri kalıcı olarak silinecektir.',
+      [
+        {text: 'İptal', style: 'cancel'},
+        {
+          text: 'Devam Et',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Son Uyarı 🚨',
+              'Bu eylem kesinlikle geri alınamaz! Tüm verileriniz kalıcı olarak yok edilecektir. Onaylıyor musunuz?',
+              [
+                {text: 'İptal', style: 'cancel'},
+                {
+                  text: 'Hesabımı Kalıcı Olarak Sil',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setUpdating(true);
+                      await apiClient.delete('/users/profile');
+                      await authService.logout();
+                      Alert.alert(
+                        'Hesap Silindi',
+                        'Hesabınız ve tüm verileriniz başarıyla silinmiştir.',
+                        [
+                          {
+                            text: 'Tamam',
+                            onPress: () =>
+                              navigation.reset({
+                                index: 0,
+                                routes: [{name: 'Login'}],
+                              }),
+                          },
+                        ]
+                      );
+                    } catch (error: any) {
+                      console.error('Hesap silme hatası:', error);
+                      Alert.alert(
+                        'Hata',
+                        error.response?.data?.message || 'Hesap silinirken bir hata oluştu.'
+                      );
+                    } finally {
+                      setUpdating(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -154,6 +252,42 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
           </View>
         </View>
 
+        {/* Connected Children Section (Only for Parents) */}
+        {role.includes('Ebeveyn') && (
+          <View style={styles.card}>
+            <Text style={styles.cardHeader}>👨‍👩‍👧‍👦 Bağlı Çocuklar</Text>
+            {children.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyEmoji}>📱</Text>
+                <Text style={styles.emptyText}>Henüz eşleşmiş bir çocuk cihazı bulunmuyor.</Text>
+                <TouchableOpacity
+                  style={styles.connectButton}
+                  onPress={() => navigation.navigate('QrGeneration')}>
+                  <Text style={styles.connectButtonText}>Çocuk Cihazı Eşleştir</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              children.map(child => (
+                <View key={child.id} style={styles.childItem}>
+                  <View style={styles.childAvatar}>
+                    <Text style={styles.childAvatarText}>👧</Text>
+                  </View>
+                  <View style={styles.childInfo}>
+                    <Text style={styles.childName}>{child.name || 'İsimsiz Çocuk'}</Text>
+                    {child.age && <Text style={styles.childDetails}>Yaş: {child.age}</Text>}
+                    <Text style={styles.childDetails}>{child.child_email || 'Cihaz Eşleşmiş'}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.deleteChildButton}
+                    onPress={() => handleDeleteChild(child.id, child.name)}>
+                    <Text style={styles.deleteChildEmoji}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
         {/* Save Button */}
         <TouchableOpacity
           style={[styles.saveButton, updating && styles.disabledBtn]}
@@ -165,6 +299,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({navigation}) => {
             <Text style={styles.saveBtnText}>Değişiklikleri Kaydet</Text>
           )}
         </TouchableOpacity>
+
+        {/* Account Management (Danger Zone) */}
+        <View style={styles.dangerZone}>
+          <Text style={styles.dangerZoneTitle}>Kritik İşlemler</Text>
+          <TouchableOpacity
+            style={[styles.deleteAccountButton, updating && styles.disabledBtn]}
+            onPress={handleDeleteAccount}
+            disabled={updating}>
+            <Text style={styles.deleteAccountText}>🗑️ Hesabı Kalıcı Olarak Sil</Text>
+          </TouchableOpacity>
+        </View>
 
       </ScrollView>
     </KeyboardAvoidingView>
@@ -264,6 +409,105 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontWeight: '700',
   },
+
+  // Children Section Styles
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  emptyEmoji: {
+    fontSize: 40,
+    marginBottom: Spacing.xs,
+    opacity: 0.5,
+  },
+  emptyText: {
+    ...Typography.bodyMedium,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  connectButton: {
+    backgroundColor: Colors.primary + '15',
+    paddingVertical: Spacing.xs + 2,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 8,
+  },
+  connectButtonText: {
+    ...Typography.bodyMedium,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  childItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  childAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.childPrimary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  childAvatarText: {
+    fontSize: 20,
+  },
+  childInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  childName: {
+    ...Typography.bodyLarge,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  childDetails: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  deleteChildButton: {
+    padding: Spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteChildEmoji: {
+    fontSize: 20,
+  },
+
+  // Danger Zone
+  dangerZone: {
+    marginTop: Spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
+    paddingTop: Spacing.md,
+  },
+  dangerZoneTitle: {
+    ...Typography.titleSmall,
+    color: Colors.error,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing.sm,
+  },
+  deleteAccountButton: {
+    height: 52,
+    borderWidth: 1,
+    borderColor: Colors.error + '40',
+    backgroundColor: Colors.error + '08',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteAccountText: {
+    ...Typography.button,
+    color: Colors.error,
+    fontWeight: '700',
+  },
 });
 
 export default ProfileScreen;
+
