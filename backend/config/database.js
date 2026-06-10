@@ -85,6 +85,7 @@ db.exec(`
     day_of_week TEXT NOT NULL,
     start_time TEXT NOT NULL,
     end_time TEXT NOT NULL,
+    daily_limit INTEGER DEFAULT 60,
     is_active INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE CASCADE,

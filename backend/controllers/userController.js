@@ -65,7 +65,7 @@ const updateProfile = (req, res) => {
     }
 
     // E-posta benzersizlik kontrolü
-    const existingUser = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, req.user.id);
+    const existingUser = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE AND id != ?').get(email, req.user.id);
     if (existingUser) {
       return res.status(409).json({ message: 'Bu e-posta adresi zaten kullanımda.' });
     }

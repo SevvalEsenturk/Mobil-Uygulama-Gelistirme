@@ -158,7 +158,7 @@ const getTimeRestrictions = (req, res) => {
  */
 const createTimeRestriction = (req, res) => {
   try {
-    const { child_id, app_name, package_name, day_of_week, start_time, end_time, is_active } = req.body;
+    const { child_id, app_name, package_name, day_of_week, start_time, end_time, daily_limit, is_active } = req.body;
 
     if (!child_id || !app_name || !package_name || !day_of_week || !start_time || !end_time) {
       return res.status(400).json({
@@ -177,9 +177,20 @@ const createTimeRestriction = (req, res) => {
 
     const id = uuidv4();
     db.prepare(`
-      INSERT INTO time_restrictions (id, parent_id, child_id, app_name, package_name, day_of_week, start_time, end_time, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, req.user.id, child_id, app_name, package_name, day_of_week, start_time, end_time, is_active !== undefined ? (is_active ? 1 : 0) : 1);
+      INSERT INTO time_restrictions (id, parent_id, child_id, app_name, package_name, day_of_week, start_time, end_time, daily_limit, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      req.user.id,
+      child_id,
+      app_name,
+      package_name,
+      day_of_week,
+      start_time,
+      end_time,
+      daily_limit !== undefined ? parseInt(daily_limit, 10) : 60,
+      is_active !== undefined ? (is_active ? 1 : 0) : 1
+    );
 
     const restriction = db.prepare('SELECT * FROM time_restrictions WHERE id = ?').get(id);
 
@@ -197,7 +208,7 @@ const createTimeRestriction = (req, res) => {
 const updateTimeRestriction = (req, res) => {
   try {
     const { id } = req.params;
-    const { app_name, package_name, day_of_week, start_time, end_time, is_active } = req.body;
+    const { app_name, package_name, day_of_week, start_time, end_time, daily_limit, is_active } = req.body;
 
     const existing = db.prepare(
       'SELECT * FROM time_restrictions WHERE id = ? AND parent_id = ?'
@@ -209,7 +220,7 @@ const updateTimeRestriction = (req, res) => {
 
     db.prepare(`
       UPDATE time_restrictions
-      SET app_name = ?, package_name = ?, day_of_week = ?, start_time = ?, end_time = ?, is_active = ?
+      SET app_name = ?, package_name = ?, day_of_week = ?, start_time = ?, end_time = ?, daily_limit = ?, is_active = ?
       WHERE id = ?
     `).run(
       app_name || existing.app_name,
@@ -217,6 +228,7 @@ const updateTimeRestriction = (req, res) => {
       day_of_week || existing.day_of_week,
       start_time || existing.start_time,
       end_time || existing.end_time,
+      daily_limit !== undefined ? parseInt(daily_limit, 10) : existing.daily_limit,
       is_active !== undefined ? (is_active ? 1 : 0) : existing.is_active,
       id
     );

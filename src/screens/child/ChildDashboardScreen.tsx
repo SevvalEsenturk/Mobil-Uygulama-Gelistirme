@@ -25,6 +25,26 @@ const ChildDashboardScreen: React.FC = () => {
     fetchInitialData();
   }, []);
 
+  const checkUsageWarnings = (currentUsages: AppUsageItem[]) => {
+    const warnings: string[] = [];
+    currentUsages.forEach(item => {
+      if (item.minutes >= item.limit) {
+        warnings.push(`⚠️ ${item.name} için günlük kullanım limitinizi aştınız!`);
+      } else if (item.minutes >= item.limit - 10) {
+        const remaining = Math.round(item.limit - item.minutes);
+        warnings.push(`⏳ ${item.name} limitine yaklaştınız. Kalan süre: ${remaining} dakika!`);
+      }
+    });
+
+    if (warnings.length > 0) {
+      Alert.alert(
+        'Kullanım Uyarısı 🔔',
+        warnings.join('\n\n'),
+        [{text: 'Anladım'}]
+      );
+    }
+  };
+
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -35,8 +55,7 @@ const ChildDashboardScreen: React.FC = () => {
       }
 
       // Fetch dynamic/simulated app usages automatically from the device
-      const deviceUsages = await usageService.getAppUsages();
-      setUsages(deviceUsages);
+      let deviceUsages = await usageService.getAppUsages();
 
       // Fetch active block rules
       const blockRes = await apiClient.get('/rules/block');
@@ -46,9 +65,28 @@ const ChildDashboardScreen: React.FC = () => {
 
       // Fetch active time restrictions
       const timeRes = await apiClient.get('/rules/time-restrictions');
+      let activeRestrictions = [];
       if (timeRes.data && timeRes.data.restrictions) {
-        setTimeLimits(timeRes.data.restrictions);
+        activeRestrictions = timeRes.data.restrictions;
+        setTimeLimits(activeRestrictions);
       }
+
+      // Override limits in deviceUsages with values from database rules
+      deviceUsages = deviceUsages.map(usage => {
+        const matchingRule = activeRestrictions.find(
+          rule => rule.package_name === usage.package && rule.is_active === 1
+        );
+        if (matchingRule) {
+          return {
+            ...usage,
+            limit: matchingRule.daily_limit,
+          };
+        }
+        return usage;
+      });
+
+      setUsages(deviceUsages);
+      checkUsageWarnings(deviceUsages);
     } catch (error) {
       console.error('Veri çekme hatası:', error);
     } finally {
@@ -62,7 +100,22 @@ const ChildDashboardScreen: React.FC = () => {
       setSyncing(true);
       
       // Refresh current usages from device/storage
-      const currentUsages = await usageService.getAppUsages();
+      let currentUsages = await usageService.getAppUsages();
+
+      // Apply active restrictions limits
+      currentUsages = currentUsages.map(usage => {
+        const matchingRule = timeLimits.find(
+          rule => rule.package_name === usage.package && rule.is_active === 1
+        );
+        if (matchingRule) {
+          return {
+            ...usage,
+            limit: matchingRule.daily_limit,
+          };
+        }
+        return usage;
+      });
+
       setUsages(currentUsages);
 
       // Sync with backend
@@ -73,6 +126,7 @@ const ChildDashboardScreen: React.FC = () => {
         'Uygulama kullanım istatistikleriniz otomatik olarak güncellendi ve ebeveyn kontrol paneline aktarıldı!',
         [{text: 'Harika'}]
       );
+      checkUsageWarnings(currentUsages);
     } catch (error: any) {
       console.error('Senkronizasyon hatası:', error);
       Alert.alert(

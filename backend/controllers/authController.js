@@ -25,7 +25,7 @@ const register = (req, res) => {
     }
 
     // Email kontrolü
-    const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    const existingUser = db.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE').get(email);
     if (existingUser) {
       return res.status(409).json({ message: 'Bu e-posta adresi zaten kayıtlı.' });
     }
@@ -70,7 +70,7 @@ const login = (req, res) => {
     }
 
     // Kullanıcıyı bul
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    const user = db.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE').get(email);
     if (!user) {
       return res.status(401).json({ message: 'Geçersiz e-posta veya şifre.' });
     }

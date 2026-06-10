@@ -36,12 +36,68 @@ const addUsageStat = (req, res) => {
     if (!app_name || !package_name || usage_minutes === undefined || !usage_date) {
       return res.status(400).json({ message: 'app_name, package_name, usage_minutes ve usage_date zorunludur.' });
     }
-    const childRecord = db.prepare('SELECT id FROM children WHERE child_user_id = ?').get(req.user.id);
+    const childRecord = db.prepare('SELECT id, parent_id, name FROM children WHERE child_user_id = ?').get(req.user.id);
     if (!childRecord) {
       return res.status(404).json({ message: 'Çocuk kaydı bulunamadı. Önce eşleştirme yapınız.' });
     }
     const id = uuidv4();
     db.prepare('INSERT INTO usage_stats (id, child_id, app_name, package_name, usage_minutes, usage_date) VALUES (?, ?, ?, ?, ?, ?)').run(id, childRecord.id, app_name, package_name, usage_minutes, usage_date);
+    
+    // Check time restrictions and generate notifications if needed
+    const restriction = db.prepare(
+      'SELECT * FROM time_restrictions WHERE child_id = ? AND package_name = ? AND is_active = 1'
+    ).get(childRecord.id, package_name);
+
+    if (restriction) {
+      const limit = restriction.daily_limit;
+      const childName = childRecord.name || 'Çocuğunuz';
+      const parentUserId = childRecord.parent_id;
+
+      // Prevent duplicate alerts on the same day
+      const todayStart = usage_date + ' 00:00:00';
+      const todayEnd = usage_date + ' 23:59:59';
+
+      if (usage_minutes >= limit) {
+        // Limit Exceeded Notification
+        const alreadyAlerted = db.prepare(`
+          SELECT id FROM notifications 
+          WHERE user_id = ? AND title = 'Limit Aşıldı' AND message LIKE ? AND created_at BETWEEN ? AND ?
+        `).get(parentUserId, `%${app_name}%`, todayStart, todayEnd);
+
+        if (!alreadyAlerted) {
+          const notifId = uuidv4();
+          db.prepare(`
+            INSERT INTO notifications (id, user_id, title, message)
+            VALUES (?, ?, ?, ?)
+          `).run(
+            notifId,
+            parentUserId,
+            'Limit Aşıldı',
+            `${childName} adlı çocuğunuz ${app_name} uygulaması için belirlenen ${limit} dakikalık günlük limiti aştı!`
+          );
+        }
+      } else if (usage_minutes >= limit - 10) {
+        // Limit Approaching Notification
+        const alreadyAlerted = db.prepare(`
+          SELECT id FROM notifications 
+          WHERE user_id = ? AND title = 'Limit Yaklaştı' AND message LIKE ? AND created_at BETWEEN ? AND ?
+        `).get(parentUserId, `%${app_name}%`, todayStart, todayEnd);
+
+        if (!alreadyAlerted) {
+          const notifId = uuidv4();
+          db.prepare(`
+            INSERT INTO notifications (id, user_id, title, message)
+            VALUES (?, ?, ?, ?)
+          `).run(
+            notifId,
+            parentUserId,
+            'Limit Yaklaştı',
+            `${childName} adlı çocuğunuz ${app_name} uygulaması için belirlenen günlük limite yaklaşıyor (Kalan: 10 dk).`
+          );
+        }
+      }
+    }
+
     const stat = db.prepare('SELECT * FROM usage_stats WHERE id = ?').get(id);
     res.status(201).json({ message: 'Kullanım verisi eklendi.', stat });
   } catch (error) {
