@@ -11,14 +11,7 @@ import {
 import {Colors, Typography, Spacing} from '../../theme';
 import apiClient from '../../api/apiClient';
 import {authService} from '../../services/authService';
-
-interface AppUsageItem {
-  name: string;
-  package: string;
-  minutes: number;
-  emoji: string;
-  limit: number;
-}
+import {usageService, AppUsageItem} from '../../services/usageService';
 
 const ChildDashboardScreen: React.FC = () => {
   const [userName, setUserName] = useState<string>('Çocuk');
@@ -26,15 +19,7 @@ const ChildDashboardScreen: React.FC = () => {
   const [syncing, setSyncing] = useState<boolean>(false);
   const [blockedApps, setBlockedApps] = useState<any[]>([]);
   const [timeLimits, setTimeLimits] = useState<any[]>([]);
-
-  // Simulated App Usages
-  const [usages, setUsages] = useState<AppUsageItem[]>([
-    {name: 'Instagram', package: 'com.instagram.android', minutes: 25, emoji: '📸', limit: 60},
-    {name: 'YouTube', package: 'com.google.android.youtube', minutes: 45, emoji: '▶️', limit: 120},
-    {name: 'WhatsApp', package: 'com.whatsapp', minutes: 15, emoji: '💬', limit: 90},
-    {name: 'Brawl Stars', package: 'com.supercell.brawlstars', minutes: 30, emoji: '🎮', limit: 45},
-    {name: 'Chrome', package: 'com.android.chrome', minutes: 10, emoji: '🌐', limit: 30},
-  ]);
+  const [usages, setUsages] = useState<AppUsageItem[]>([]);
 
   useEffect(() => {
     fetchInitialData();
@@ -48,6 +33,10 @@ const ChildDashboardScreen: React.FC = () => {
       if (user && user.name) {
         setUserName(user.name);
       }
+
+      // Fetch dynamic/simulated app usages automatically from the device
+      const deviceUsages = await usageService.getAppUsages();
+      setUsages(deviceUsages);
 
       // Fetch active block rules
       const blockRes = await apiClient.get('/rules/block');
@@ -67,38 +56,21 @@ const ChildDashboardScreen: React.FC = () => {
     }
   };
 
-  // Simulated time adjustments (+/- minutes)
-  const adjustMinutes = (index: number, amount: number) => {
-    setUsages(prev =>
-      prev.map((item, idx) => {
-        if (idx !== index) return item;
-        const newMinutes = Math.max(0, item.minutes + amount);
-        return {...item, minutes: newMinutes};
-      })
-    );
-  };
-
   // Sync today's usage stats to the parent via Backend API
   const handleSyncUsage = async () => {
     try {
       setSyncing(true);
-      const today = new Date().toISOString().split('T')[0];
+      
+      // Refresh current usages from device/storage
+      const currentUsages = await usageService.getAppUsages();
+      setUsages(currentUsages);
 
-      // POST each usage stat to backend sequentially/concurrently
-      const promises = usages.map(item =>
-        apiClient.post('/usage/stats', {
-          app_name: item.name,
-          package_name: item.package,
-          usage_minutes: item.minutes,
-          usage_date: today,
-        })
-      );
-
-      await Promise.all(promises);
+      // Sync with backend
+      await usageService.syncUsagesWithBackend(currentUsages);
 
       Alert.alert(
         'Başarılı 🎉',
-        'Uygulama kullanım istatistikleriniz başarıyla ebeveyn kontrol paneline aktarıldı!',
+        'Uygulama kullanım istatistikleriniz otomatik olarak güncellendi ve ebeveyn kontrol paneline aktarıldı!',
         [{text: 'Harika'}]
       );
     } catch (error: any) {
@@ -137,7 +109,7 @@ const ChildDashboardScreen: React.FC = () => {
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>Bugünkü Uygulama Kullanım Süren</Text>
           <Text style={styles.cardSubtitle}>
-            Sürelerini artırmak/azaltmak için butonları kullan ve ebeveynine aktar.
+            Cihazınızdaki uygulamaların günlük kullanım süreleri otomatik olarak takip edilmektedir.
           </Text>
         </View>
 
@@ -151,7 +123,7 @@ const ChildDashboardScreen: React.FC = () => {
                 <Text style={styles.appIconEmoji}>{item.emoji}</Text>
               </View>
 
-              <View style={styles.usageMain}>
+              <View style={[styles.usageMain, {marginRight: 0}]}>
                 <View style={styles.usageTextRow}>
                   <Text style={styles.appName}>{item.name}</Text>
                   <Text style={[styles.appTimeText, isOverLimit && styles.textError]}>
@@ -172,20 +144,6 @@ const ChildDashboardScreen: React.FC = () => {
                   />
                 </View>
               </View>
-
-              {/* Incremental Adjustment Buttons for Simulation */}
-              <View style={styles.adjustmentControls}>
-                <TouchableOpacity
-                  style={styles.adjustBtn}
-                  onPress={() => adjustMinutes(index, -5)}>
-                  <Text style={styles.adjustBtnText}>-</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.adjustBtn, styles.adjustBtnPlus]}
-                  onPress={() => adjustMinutes(index, 5)}>
-                  <Text style={[styles.adjustBtnText, styles.adjustBtnTextPlus]}>+</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           );
         })}
@@ -200,7 +158,7 @@ const ChildDashboardScreen: React.FC = () => {
           ) : (
             <>
               <Text style={styles.syncButtonEmoji}>🔄</Text>
-              <Text style={styles.syncButtonText}>Kullanım Verilerini Ebeveyne Aktar</Text>
+              <Text style={styles.syncButtonText}>Verileri Güncelle ve Ebeveyne Aktar</Text>
             </>
           )}
         </TouchableOpacity>
